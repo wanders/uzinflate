@@ -88,8 +88,7 @@
 
 /* @(#) $Id$ */
 
-#define ZLIB_INTERNAL
-#include "zlib.h"
+#include "uzlib.h"
 
 #include <stdlib.h>
 #include <string.h>
