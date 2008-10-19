@@ -1,0 +1,15 @@
+
+CFLAGS:=-Wall -ggdb3
+
+OBJS = adler32.o crc32.o \
+       zutil.o inflate.o infback.o inftrees.o inffast.o
+
+uzlib.o: $(OBJS)
+	ld -r -o $@ $+
+
+uzlibtest: uzlib.o uztest.o
+	gcc -o $@ $+
+
+.PHONY: clean
+clean:
+	rm -f *.o *~ uzlibtest
