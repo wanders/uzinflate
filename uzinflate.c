@@ -81,15 +81,99 @@
  * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
  */
 
+/* adler32.c -- compute the Adler-32 checksum of a data stream
+ * Copyright (C) 1995-2004 Mark Adler
+ * For conditions of distribution and use, see copyright notice in zlib.h
+ */
+
+/* @(#) $Id$ */
+
+#define ZLIB_INTERNAL
+#include "zlib.h"
+
+#define BASE 65521UL    /* largest prime smaller than 65536 */
+#define NMAX 5552
+/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
+
+#define DO1(buf,i)  {adler += (buf)[i]; sum2 += adler;}
+#define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
+#define DO4(buf,i)  DO2(buf,i); DO2(buf,i+2);
+#define DO8(buf,i)  DO4(buf,i); DO4(buf,i+4);
+#define DO16(buf)   DO8(buf,0); DO8(buf,8);
+
+/* use NO_DIVIDE if your processor does not do division in hardware */
+#ifdef NO_DIVIDE
+#  define MOD(a) \
+    do { \
+        if (a >= (BASE << 16)) a -= (BASE << 16); \
+        if (a >= (BASE << 15)) a -= (BASE << 15); \
+        if (a >= (BASE << 14)) a -= (BASE << 14); \
+        if (a >= (BASE << 13)) a -= (BASE << 13); \
+        if (a >= (BASE << 12)) a -= (BASE << 12); \
+        if (a >= (BASE << 11)) a -= (BASE << 11); \
+        if (a >= (BASE << 10)) a -= (BASE << 10); \
+        if (a >= (BASE << 9)) a -= (BASE << 9); \
+        if (a >= (BASE << 8)) a -= (BASE << 8); \
+        if (a >= (BASE << 7)) a -= (BASE << 7); \
+        if (a >= (BASE << 6)) a -= (BASE << 6); \
+        if (a >= (BASE << 5)) a -= (BASE << 5); \
+        if (a >= (BASE << 4)) a -= (BASE << 4); \
+        if (a >= (BASE << 3)) a -= (BASE << 3); \
+        if (a >= (BASE << 2)) a -= (BASE << 2); \
+        if (a >= (BASE << 1)) a -= (BASE << 1); \
+        if (a >= BASE) a -= BASE; \
+    } while (0)
+#  define MOD4(a) \
+    do { \
+        if (a >= (BASE << 4)) a -= (BASE << 4); \
+        if (a >= (BASE << 3)) a -= (BASE << 3); \
+        if (a >= (BASE << 2)) a -= (BASE << 2); \
+        if (a >= (BASE << 1)) a -= (BASE << 1); \
+        if (a >= BASE) a -= BASE; \
+    } while (0)
+#else
+#  define MOD(a) a %= BASE
+#  define MOD4(a) a %= BASE
+#endif
+
+/* zutil.c -- target dependent utility functions for the compression library
+ * Copyright (C) 1995-2005 Jean-loup Gailly.
+ * For conditions of distribution and use, see copyright notice in zlib.h
+ */
+
+/* @(#) $Id$ */
+
+#include "zutil.h"
+
+
+/* inftrees.c -- generate Huffman trees for efficient decoding
+ * Copyright (C) 1995-2005 Mark Adler
+ * For conditions of distribution and use, see copyright notice in zlib.h
+ */
+
+#include "zutil.h"
+#include "inftrees.h"
+
+#define MAXBITS 15
+
+const char inflate_copyright[] =
+   " inflate 1.2.3 Copyright 1995-2005 Mark Adler ";
+/*
+  If you use the zlib library in a product, an acknowledgment is welcome
+  in the documentation of your product. If for some reason you cannot
+  include such an acknowledgment, I would appreciate that you keep this
+  copyright string in the executable of your product.
+ */
+
 #include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
 
 /* function prototypes */
-local void fixedtables OF((struct inflate_state FAR *state));
-local int updatewindow OF((z_streamp strm, unsigned out));
-local unsigned syncsearch OF((unsigned FAR *have, unsigned char FAR *buf,
+static void fixedtables OF((struct inflate_state FAR *state));
+static int updatewindow OF((z_streamp strm, unsigned out));
+static unsigned syncsearch OF((unsigned FAR *have, unsigned char FAR *buf,
                               unsigned len));
 
 int ZEXPORT inflateReset(strm)
@@ -191,7 +275,7 @@ int stream_size;
    used for threaded applications, since the rewriting of the tables and virgin
    may not be thread-safe.
  */
-local void fixedtables(state)
+static void fixedtables(state)
 struct inflate_state FAR *state;
 {
 #   include "inffixed.h"
@@ -215,7 +299,7 @@ struct inflate_state FAR *state;
    output will fall in the output data, making match copies simpler and faster.
    The advantage may be dependent on the size of the processor's data caches.
  */
-local int updatewindow(strm, out)
+static int updatewindow(strm, out)
 z_streamp strm;
 unsigned out;
 {
@@ -945,7 +1029,7 @@ gz_headerp head;
    called again with more data and the *have state.  *have is initialized to
    zero for the first call.
  */
-local unsigned syncsearch(have, buf, len)
+static unsigned syncsearch(have, buf, len)
 unsigned FAR *have;
 unsigned char FAR *buf;
 unsigned len;
@@ -1076,60 +1160,6 @@ z_streamp source;
     return Z_OK;
 }
 
-/* adler32.c -- compute the Adler-32 checksum of a data stream
- * Copyright (C) 1995-2004 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-/* @(#) $Id$ */
-
-#define ZLIB_INTERNAL
-#include "zlib.h"
-
-#define BASE 65521UL    /* largest prime smaller than 65536 */
-#define NMAX 5552
-/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
-
-#define DO1(buf,i)  {adler += (buf)[i]; sum2 += adler;}
-#define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
-#define DO4(buf,i)  DO2(buf,i); DO2(buf,i+2);
-#define DO8(buf,i)  DO4(buf,i); DO4(buf,i+4);
-#define DO16(buf)   DO8(buf,0); DO8(buf,8);
-
-/* use NO_DIVIDE if your processor does not do division in hardware */
-#ifdef NO_DIVIDE
-#  define MOD(a) \
-    do { \
-        if (a >= (BASE << 16)) a -= (BASE << 16); \
-        if (a >= (BASE << 15)) a -= (BASE << 15); \
-        if (a >= (BASE << 14)) a -= (BASE << 14); \
-        if (a >= (BASE << 13)) a -= (BASE << 13); \
-        if (a >= (BASE << 12)) a -= (BASE << 12); \
-        if (a >= (BASE << 11)) a -= (BASE << 11); \
-        if (a >= (BASE << 10)) a -= (BASE << 10); \
-        if (a >= (BASE << 9)) a -= (BASE << 9); \
-        if (a >= (BASE << 8)) a -= (BASE << 8); \
-        if (a >= (BASE << 7)) a -= (BASE << 7); \
-        if (a >= (BASE << 6)) a -= (BASE << 6); \
-        if (a >= (BASE << 5)) a -= (BASE << 5); \
-        if (a >= (BASE << 4)) a -= (BASE << 4); \
-        if (a >= (BASE << 3)) a -= (BASE << 3); \
-        if (a >= (BASE << 2)) a -= (BASE << 2); \
-        if (a >= (BASE << 1)) a -= (BASE << 1); \
-        if (a >= BASE) a -= BASE; \
-    } while (0)
-#  define MOD4(a) \
-    do { \
-        if (a >= (BASE << 4)) a -= (BASE << 4); \
-        if (a >= (BASE << 3)) a -= (BASE << 3); \
-        if (a >= (BASE << 2)) a -= (BASE << 2); \
-        if (a >= (BASE << 1)) a -= (BASE << 1); \
-        if (a >= BASE) a -= BASE; \
-    } while (0)
-#else
-#  define MOD(a) a %= BASE
-#  define MOD4(a) a %= BASE
-#endif
 
 /* ========================================================================= */
 uLong ZEXPORT adler32(adler, buf, len)
@@ -1226,18 +1256,6 @@ uLong ZEXPORT adler32_combine(adler1, adler2, len2)
     return sum1 | (sum2 << 16);
 }
 
-/* zutil.c -- target dependent utility functions for the compression library
- * Copyright (C) 1995-2005 Jean-loup Gailly.
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-/* @(#) $Id$ */
-
-#include "zutil.h"
-
-#ifndef NO_DUMMY_DECL
-struct internal_state      {int dummy;}; /* for buggy compilers */
-#endif
 
 const char * const z_errmsg[10] = {
 "need dictionary",     /* Z_NEED_DICT       2  */
@@ -1385,14 +1403,14 @@ const char * ZEXPORT zError(err)
 #define MAX_PTR 10
 /* 10*64K = 640K */
 
-local int next_ptr = 0;
+static int next_ptr = 0;
 
 typedef struct ptr_table_s {
     voidpf org_ptr;
     voidpf new_ptr;
 } ptr_table;
 
-local ptr_table table[MAX_PTR];
+static ptr_table table[MAX_PTR];
 /* This table is used to remember the original form of pointers
  * to large buffers (64K). Such pointers are normalized with a zero offset.
  * Since MSDOS is not a preemptive multitasking OS, this table is not
@@ -1504,24 +1522,7 @@ void  zcfree (opaque, ptr)
 
 #endif /* MY_ZCALLOC */
 
-/* inftrees.c -- generate Huffman trees for efficient decoding
- * Copyright (C) 1995-2005 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
 
-#include "zutil.h"
-#include "inftrees.h"
-
-#define MAXBITS 15
-
-const char inflate_copyright[] =
-   " inflate 1.2.3 Copyright 1995-2005 Mark Adler ";
-/*
-  If you use the zlib library in a product, an acknowledgment is welcome
-  in the documentation of your product. If for some reason you cannot
-  include such an acknowledgment, I would appreciate that you keep this
-  copyright string in the executable of your product.
- */
 
 /*
    Build a set of tables to decode the provided canonical Huffman code.
