@@ -1,5 +1,6 @@
 
-CFLAGS:=-Wall -ggdb3
+CFLAGS:=-Wall -O2 -Wextra -ggdb3
+
 
 OBJS = uzinflate.o
 

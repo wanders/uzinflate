@@ -91,6 +91,9 @@
 #define ZLIB_INTERNAL
 #include "zlib.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #define BASE 65521UL    /* largest prime smaller than 65536 */
 #define NMAX 5552
 /* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
@@ -143,7 +146,28 @@
 
 /* @(#) $Id$ */
 
-#include "zutil.h"
+#  define Assert(cond,msg)
+#  define Trace(x)
+#  define Tracev(x)
+#  define Tracevv(x)
+#  define Tracec(c,x)
+#  define Tracecv(c,x)
+
+#ifndef DEF_WBITS
+#  define DEF_WBITS MAX_WBITS
+#endif
+/* default windowBits for decompression. MAX_WBITS is for compression only */
+
+voidpf zcalloc OF((voidpf opaque, unsigned items, unsigned size));
+void   zcfree  OF((voidpf opaque, voidpf ptr));
+
+#define ZALLOC(strm, items, size) \
+           (*((strm)->zalloc))((strm)->opaque, (items), (size))
+#define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidpf)(addr))
+
+#    define zmemcpy memcpy
+
+#define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
 
 
 /* inftrees.c -- generate Huffman trees for efficient decoding
@@ -151,7 +175,6 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include "zutil.h"
 #include "inftrees.h"
 
 #define MAXBITS 15
@@ -165,7 +188,6 @@ const char inflate_copyright[] =
   copyright string in the executable of your product.
  */
 
-#include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
@@ -1840,7 +1862,6 @@ unsigned short FAR *work;
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
