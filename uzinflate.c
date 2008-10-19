@@ -873,13 +873,6 @@ int flush;
             DROPBITS(5);
             state->ncode = BITS(4) + 4;
             DROPBITS(4);
-#ifndef PKZIP_BUG_WORKAROUND
-            if (state->nlen > 286 || state->ndist > 30) {
-                strm->msg = (char *)"too many length or distance symbols";
-                state->mode = BAD;
-                break;
-            }
-#endif
             Tracev((stderr, "inflate:       table sizes ok\n"));
             state->have = 0;
             state->mode = LENLENS;
@@ -1060,13 +1053,6 @@ int flush;
                 state->offset += BITS(state->extra);
                 DROPBITS(state->extra);
             }
-#ifdef INFLATE_STRICT
-            if (state->offset > state->dmax) {
-                strm->msg = (char *)"invalid distance too far back";
-                state->mode = BAD;
-                break;
-            }
-#endif
             if (state->offset > state->whave + out - left) {
                 strm->msg = (char *)"invalid distance too far back";
                 state->mode = BAD;
@@ -1264,14 +1250,6 @@ const char * const z_errmsg[10] = {
 ""};
 
 
-#ifndef MY_ZCALLOC /* Any system without a special alloc function */
-
-#ifndef STDC
-extern voidp  malloc OF((uInt size));
-extern voidp  calloc OF((uInt items, uInt size));
-extern void   free   OF((voidpf ptr));
-#endif
-
 voidpf zcalloc (opaque, items, size)
     voidpf opaque;
     unsigned items;
@@ -1289,9 +1267,6 @@ void  zcfree (opaque, ptr)
     free(ptr);
     if (opaque) return; /* make compiler happy */
 }
-
-#endif /* MY_ZCALLOC */
-
 
 
 /*
@@ -1610,26 +1585,8 @@ unsigned short FAR *work;
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#ifndef ASMINF
-
-/* Allow machine dependent optimization for post-increment or pre-increment.
-   Based on testing to date,
-   Pre-increment preferred for:
-   - PowerPC G3 (Adler)
-   - MIPS R5000 (Randers-Pehrson)
-   Post-increment preferred for:
-   - none
-   No measurable difference:
-   - Pentium III (Anderson)
-   - M68060 (Nikl)
- */
-#ifdef POSTINC
 #  define OFF 0
 #  define PUP(a) *(a)++
-#else
-#  define OFF 1
-#  define PUP(a) *++(a)
-#endif
 
 /*
    Decode literal, length, and distance codes and write out the resulting
@@ -1676,9 +1633,6 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
     unsigned char FAR *out;     /* local strm->next_out */
     unsigned char FAR *beg;     /* inflate()'s initial strm->next_out */
     unsigned char FAR *end;     /* while out < end, enough space available */
-#ifdef INFLATE_STRICT
-    unsigned dmax;              /* maximum distance from zlib header */
-#endif
     unsigned wsize;             /* window size or zero if not using window */
     unsigned whave;             /* valid bytes in the window */
     unsigned write;             /* window write index */
@@ -1703,9 +1657,6 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
     out = strm->next_out - OFF;
     beg = out - (start - strm->avail_out);
     end = out + (strm->avail_out - 257);
-#ifdef INFLATE_STRICT
-    dmax = state->dmax;
-#endif
     wsize = state->wsize;
     whave = state->whave;
     write = state->write;
@@ -1775,13 +1726,6 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
                     }
                 }
                 dist += (unsigned)hold & ((1U << op) - 1);
-#ifdef INFLATE_STRICT
-                if (dist > dmax) {
-                    strm->msg = (char *)"invalid distance too far back";
-                    state->mode = BAD;
-                    break;
-                }
-#endif
                 hold >>= op;
                 bits -= op;
                 Tracevv((stderr, "inflate:         distance %u\n", dist));
@@ -1917,5 +1861,4 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
    - Moving len -= 3 statement into middle of loop
  */
 
-#endif /* !ASMINF */
 
