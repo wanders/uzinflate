@@ -1,7 +1,7 @@
 
 CFLAGS:=-Wall -ggdb3
 
-OBJS = adler32.o crc32.o \
+OBJS = adler32.o \
        zutil.o inflate.o infback.o inftrees.o inffast.o
 
 uzlib.o: $(OBJS)
