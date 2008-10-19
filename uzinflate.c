@@ -1504,3 +1504,5 @@ void  zcfree (opaque, ptr)
 
 #endif /* MY_ZCALLOC */
 
+#include "inftrees.c"
+#include "inffast.c"

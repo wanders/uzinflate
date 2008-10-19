@@ -1,7 +1,7 @@
 
 CFLAGS:=-Wall -ggdb3
 
-OBJS = uzinflate.o inftrees.o inffast.o
+OBJS = uzinflate.o
 
 uzlib.o: $(OBJS)
 	ld -r -o $@ $+
