@@ -167,7 +167,6 @@ struct inflate_state {
 	unsigned dmax;		/* zlib header max distance (INFLATE_STRICT) */
 	unsigned long check;	/* protected copy of check value */
 	unsigned long total;	/* protected copy of output count */
-//    gz_headerp head;            /* where to save gzip header information */
 	/* sliding window */
 	unsigned wbits;		/* log base 2 of requested window size */
 	unsigned wsize;		/* window size or zero if not using window */
@@ -256,7 +255,6 @@ inflateReset(z_streamp strm)
 	state->last = 0;
 	state->havedict = 0;
 	state->dmax = 32768U;
-	//state->head = Z_NULL;
 	state->wsize = 0;
 	state->whave = 0;
 	state->write = 0;
