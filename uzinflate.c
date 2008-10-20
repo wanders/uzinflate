@@ -106,68 +106,6 @@
 #  define MOD(a) a %= BASE
 #  define MOD4(a) a %= BASE
 
-			/* checksum functions */
-
-/*
-     These functions are not related to compression but are exported
-   anyway because they might be useful in applications using the
-   compression library.
-*/
-
-static uLong adler32 (uLong adler, const Bytef * buf, uInt len);
-/*
-     Update a running Adler-32 checksum with the bytes buf[0..len-1] and
-   return the updated checksum. If buf is NULL, this function returns
-   the required initial value for the checksum.
-   An Adler-32 checksum is almost as reliable as a CRC32 but can be computed
-   much faster. Usage example:
-
-     uLong adler = adler32(0L, Z_NULL, 0);
-
-     while (read_buffer(buffer, length) != EOF) {
-       adler = adler32(adler, buffer, length);
-     }
-     if (adler != original_adler) error();
-*/
-
-/* zutil.c -- target dependent utility functions for the compression library
- * Copyright (C) 1995-2005 Jean-loup Gailly.
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-/* @(#) $Id$ */
-
-#  define Assert(cond,msg)
-#  define Trace(x)
-#  define Tracev(x)
-#  define Tracevv(x)
-#  define Tracec(c,x)
-#  define Tracecv(c,x)
-
-#ifndef MAX_WBITS
-#  define MAX_WBITS   15	/* 32K LZ77 window */
-#endif
-#ifndef DEF_WBITS
-#  define DEF_WBITS MAX_WBITS
-#endif
-/* default windowBits for decompression. MAX_WBITS is for compression only */
-
-static voidp zcalloc (voidp opaque, unsigned items, unsigned size);
-static void zcfree (voidp opaque, voidp ptr);
-
-#define ZALLOC(strm, items, size) \
-           (*((strm)->zalloc))((strm)->opaque, (items), (size))
-#define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidp)(addr))
-
-#define zmemcpy memcpy
-
-#define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
-
-/* inftrees.c -- generate Huffman trees for efficient decoding
- * Copyright (C) 1995-2005 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
 /* Structure for decoding tables.  Each entry provides either the
    information needed to do the operation requested by the code that
    indexed that table entry, or it provides a pointer to another
@@ -209,20 +147,6 @@ typedef enum {
 	LENS,
 	DISTS
 } codetype;
-
-static int inflate_table (codetype type, unsigned short *lens, unsigned codes, code **table, unsigned *bits, unsigned short *work);
-
-static void inflate_fast (z_streamp strm, unsigned start);
-
-#define MAXBITS 15
-
-const char inflate_copyright[] = " inflate 1.2.3 Copyright 1995-2005 Mark Adler ";
-/*
-  If you use the zlib library in a product, an acknowledgment is welcome
-  in the documentation of your product. If for some reason you cannot
-  include such an acknowledgment, I would appreciate that you keep this
-  copyright string in the executable of your product.
- */
 
 /* Possible inflate modes between inflate() calls */
 typedef enum {
@@ -281,6 +205,7 @@ typedef enum {
         CHECK -> LENGTH -> DONE
  */
 
+
 /* state maintained between inflate() calls.  Approximately 7K bytes. */
 struct inflate_state {
 	inflate_mode mode;	/* current inflate mode */
@@ -322,9 +247,91 @@ struct inflate_state {
 	code codes[ENOUGH];	/* space for code tables */
 };
 
+			/* checksum functions */
+
+/*
+     These functions are not related to compression but are exported
+   anyway because they might be useful in applications using the
+   compression library.
+*/
+
 /* function prototypes */
+
+static uLong adler32 (uLong adler, const Bytef * buf, uInt len);
+static voidp zcalloc (voidp opaque, unsigned items, unsigned size);
+static void zcfree (voidp opaque, voidp ptr);
+static int inflate_table (codetype type, unsigned short *lens, unsigned codes, code **table, unsigned *bits, unsigned short *work);
+
+static void inflate_fast (z_streamp strm, unsigned start);
+
 static void fixedtables (struct inflate_state *state);
 static int updatewindow (z_streamp strm, unsigned out);
+static int inflateReset(z_streamp strm);
+
+static int inflateInit2_(z_streamp strm, int windowBits);
+
+
+/*
+     Update a running Adler-32 checksum with the bytes buf[0..len-1] and
+   return the updated checksum. If buf is NULL, this function returns
+   the required initial value for the checksum.
+   An Adler-32 checksum is almost as reliable as a CRC32 but can be computed
+   much faster. Usage example:
+
+     uLong adler = adler32(0L, Z_NULL, 0);
+
+     while (read_buffer(buffer, length) != EOF) {
+       adler = adler32(adler, buffer, length);
+     }
+     if (adler != original_adler) error();
+*/
+
+/* zutil.c -- target dependent utility functions for the compression library
+ * Copyright (C) 1995-2005 Jean-loup Gailly.
+ * For conditions of distribution and use, see copyright notice in zlib.h
+ */
+
+/* @(#) $Id$ */
+
+#  define Assert(cond,msg)
+#  define Trace(x)
+#  define Tracev(x)
+#  define Tracevv(x)
+#  define Tracec(c,x)
+#  define Tracecv(c,x)
+
+#ifndef MAX_WBITS
+#  define MAX_WBITS   15	/* 32K LZ77 window */
+#endif
+#ifndef DEF_WBITS
+#  define DEF_WBITS MAX_WBITS
+#endif
+/* default windowBits for decompression. MAX_WBITS is for compression only */
+
+#define ZALLOC(strm, items, size) \
+           (*((strm)->zalloc))((strm)->opaque, (items), (size))
+#define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidp)(addr))
+
+#define zmemcpy memcpy
+
+#define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
+
+/* inftrees.c -- generate Huffman trees for efficient decoding
+ * Copyright (C) 1995-2005 Mark Adler
+ * For conditions of distribution and use, see copyright notice in zlib.h
+ */
+
+
+#define MAXBITS 15
+
+const char inflate_copyright[] = " inflate 1.2.3 Copyright 1995-2005 Mark Adler ";
+/*
+  If you use the zlib library in a product, an acknowledgment is welcome
+  in the documentation of your product. If for some reason you cannot
+  include such an acknowledgment, I would appreciate that you keep this
+  copyright string in the executable of your product.
+ */
+
 
 static int inflateReset(z_streamp strm)
 {
