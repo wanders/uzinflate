@@ -3,8 +3,6 @@
 #ifndef UZLIB_H
 #define UZLIB_H
 
-#define OF(args)  args
-
 #define FAR
 typedef unsigned char Byte;
 
@@ -22,8 +20,8 @@ typedef uLong uLongf;
    typedef void FAR   *voidpf;
    typedef void       *voidp;
 
-typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));
-typedef void   (*free_func)  OF((voidpf opaque, voidpf address));
+typedef voidpf (*alloc_func) (voidpf opaque, uInt items, uInt size);
+typedef void   (*free_func)  (voidpf opaque, voidpf address);
 
 struct internal_state;
 
@@ -97,7 +95,7 @@ typedef z_stream FAR *z_streamp;
 
 #define Z_NULL  0  /* for initializing zalloc, zfree, opaque */
 
-int inflateInit OF((z_streamp strm));
+int inflateInit (z_streamp strm);
 /*
 ZEXTERN int ZEXPORT inflateInit OF((z_streamp strm));
 
@@ -119,7 +117,7 @@ ZEXTERN int ZEXPORT inflateInit OF((z_streamp strm));
 */
 
 
-int inflate OF((z_streamp strm, int flush));
+int inflate (z_streamp strm, int flush);
 /*
     inflate decompresses as much data as possible, and stops when the input
   buffer becomes empty or the output buffer becomes full. It may introduce
@@ -218,7 +216,7 @@ int inflate OF((z_streamp strm, int flush));
 */
 
 
-int inflateEnd OF((z_streamp strm));
+int inflateEnd (z_streamp strm);
 /*
      All dynamically allocated data structures for this stream are freed.
    This function discards any unprocessed input and does not flush any

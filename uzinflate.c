@@ -114,7 +114,7 @@
    compression library.
 */
 
-static uLong adler32 OF((uLong adler, const Bytef * buf, uInt len));
+static uLong adler32 (uLong adler, const Bytef * buf, uInt len);
 /*
      Update a running Adler-32 checksum with the bytes buf[0..len-1] and
    return the updated checksum. If buf is NULL, this function returns
@@ -152,14 +152,14 @@ static uLong adler32 OF((uLong adler, const Bytef * buf, uInt len));
 #endif
 /* default windowBits for decompression. MAX_WBITS is for compression only */
 
-voidpf zcalloc OF((voidpf opaque, unsigned items, unsigned size));
-void zcfree OF((voidpf opaque, voidpf ptr));
+static voidpf zcalloc (voidpf opaque, unsigned items, unsigned size);
+static void zcfree (voidpf opaque, voidpf ptr);
 
 #define ZALLOC(strm, items, size) \
            (*((strm)->zalloc))((strm)->opaque, (items), (size))
 #define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidpf)(addr))
 
-#    define zmemcpy memcpy
+#define zmemcpy memcpy
 
 #define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
 
@@ -210,9 +210,9 @@ typedef enum {
 	DISTS
 } codetype;
 
-static int inflate_table OF((codetype type, unsigned short FAR * lens, unsigned codes, code FAR * FAR * table, unsigned FAR * bits, unsigned short FAR * work));
+static int inflate_table (codetype type, unsigned short FAR * lens, unsigned codes, code FAR * FAR * table, unsigned FAR * bits, unsigned short FAR * work);
 
-static void inflate_fast OF((z_streamp strm, unsigned start));
+static void inflate_fast (z_streamp strm, unsigned start);
 
 #define MAXBITS 15
 
@@ -323,11 +323,10 @@ struct inflate_state {
 };
 
 /* function prototypes */
-static void fixedtables OF((struct inflate_state FAR * state));
-static int updatewindow OF((z_streamp strm, unsigned out));
+static void fixedtables (struct inflate_state FAR * state);
+static int updatewindow (z_streamp strm, unsigned out);
 
-static int inflateReset(strm)
-z_streamp strm;
+static int inflateReset(z_streamp strm)
 {
 	struct inflate_state FAR *state;
 
