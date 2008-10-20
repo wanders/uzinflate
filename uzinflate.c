@@ -1,5 +1,7 @@
-/* Based on the 'zlib' general purpose compression library
-  version 1.2.3, July 18th, 2005
+/* 
+   This is uzinflate, a slimmed down inflate-only part of the
+  'zlib' general purpose compression library
+   version 1.2.3, July 18th, 2005
 
   Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler
 
