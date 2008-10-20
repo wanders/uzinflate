@@ -241,7 +241,8 @@ static int inflateInit2_(z_streamp strm, int windowBits);
 #define MAXBITS 15
 
 
-static int inflateReset(z_streamp strm)
+static int
+inflateReset(z_streamp strm)
 {
 	struct inflate_state *state;
 
@@ -266,9 +267,8 @@ static int inflateReset(z_streamp strm)
 	return Z_OK;
 }
 
-static int inflateInit2_(strm, windowBits)
-z_streamp strm;
-int windowBits;
+static int
+inflateInit2_(z_streamp strm, int windowBits)
 {
 	struct inflate_state *state;
 
@@ -303,8 +303,8 @@ int windowBits;
 	return inflateReset(strm);
 }
 
-int inflateInit(strm)
-z_streamp strm;
+int
+inflateInit(z_streamp strm)
 {
 	return inflateInit2_(strm, DEF_WBITS);
 }
@@ -319,8 +319,8 @@ z_streamp strm;
    used for threaded applications, since the rewriting of the tables and virgin
    may not be thread-safe.
  */
-static void fixedtables(state)
-struct inflate_state *state;
+static void
+fixedtables(struct inflate_state *state)
 {
 	static const code lenfix[512] = {
 		{96, 7, 0}, {0, 8, 80}, {0, 8, 16}, {20, 8, 115}, {18, 7, 31}, {0, 8, 112}, {0, 8, 48},
@@ -428,9 +428,8 @@ struct inflate_state *state;
    output will fall in the output data, making match copies simpler and faster.
    The advantage may be dependent on the size of the processor's data caches.
  */
-static int updatewindow(strm, out)
-z_streamp strm;
-unsigned out;
+static int
+updatewindow (z_streamp strm, unsigned out)
 {
 	struct inflate_state *state;
 	unsigned copy, dist;
@@ -636,9 +635,8 @@ unsigned out;
    will return Z_BUF_ERROR if it has not reached the end of the stream.
  */
 
-int inflate(strm, flush)
-z_streamp strm;
-int flush;
+int
+inflate(z_streamp strm ,int flush)
 {
 	struct inflate_state *state;
 	unsigned char *next;	/* next input */
@@ -1055,8 +1053,8 @@ int flush;
 	return ret;
 }
 
-int inflateEnd(strm)
-z_streamp strm;
+int
+inflateEnd(z_streamp strm)
 {
 	struct inflate_state *state;
 	if (strm == Z_NULL || strm->state == Z_NULL || strm->zfree == (free_func) 0)
@@ -1084,10 +1082,8 @@ z_streamp strm;
      }
      if (adler != original_adler) error();
 */
-static uLong adler32(adler, buf, len)
-uLong adler;
-const Bytef *buf;
-uInt len;
+static uLong
+adler32 (uLong adler, const Bytef *buf, uInt len)
 {
 	unsigned long sum2;
 	unsigned n;
@@ -1198,13 +1194,8 @@ voidp ptr;
    table index bits.  It will differ if the request is greater than the
    longest code or if it is less than the shortest code.
  */
-static int inflate_table(type, lens, codes, table, bits, work)
-codetype type;
-unsigned short *lens;
-unsigned codes;
-code ** table;
-unsigned *bits;
-unsigned short *work;
+static int
+inflate_table (codetype type, unsigned short *lens, unsigned codes, code ** table, unsigned *bits, unsigned short *work)
 {
 	unsigned len;		/* a code's length in bits */
 	unsigned sym;		/* index of code symbols */
@@ -1543,9 +1534,7 @@ unsigned short *work;
       requires strm->avail_out >= 258 for each loop to avoid checking for
       output space.
  */
-static void inflate_fast(strm, start)
-z_streamp strm;
-unsigned start;			/* inflate()'s starting value for strm->avail_out */
+static void inflate_fast(z_streamp strm, unsigned start)
 {
 	struct inflate_state *state;
 	unsigned char *in;	/* local strm->next_in */
