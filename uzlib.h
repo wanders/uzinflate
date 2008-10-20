@@ -3,25 +3,18 @@
 #ifndef UZLIB_H
 #define UZLIB_H
 
-#define FAR
 typedef unsigned char Byte;
 
 typedef unsigned int uInt;
 typedef unsigned long uLong;
-   typedef Byte Bytef;
-
-typedef char charf;
-typedef int intf;
-typedef uInt uIntf;
-typedef uLong uLongf;
+typedef Byte Bytef;
 
 
-   typedef void const *voidpc;
-   typedef void FAR   *voidpf;
-   typedef void       *voidp;
+typedef void const *voidpc;
+typedef void       *voidp;
 
-typedef voidpf (*alloc_func) (voidpf opaque, uInt items, uInt size);
-typedef void   (*free_func)  (voidpf opaque, voidpf address);
+typedef voidp (*alloc_func) (voidp opaque, uInt items, uInt size);
+typedef void   (*free_func)  (voidp opaque, voidp address);
 
 struct internal_state;
 
@@ -35,18 +28,18 @@ typedef struct z_stream_s {
     uLong    total_out; /* total nb of bytes output so far */
 
     char     *msg;      /* last error message, NULL if no error */
-    struct internal_state FAR *state; /* not visible by applications */
+    struct internal_state *state; /* not visible by applications */
 
     alloc_func zalloc;  /* used to allocate the internal state */
     free_func  zfree;   /* used to free the internal state */
-    voidpf     opaque;  /* private data object passed to zalloc and zfree */
+    voidp     opaque;  /* private data object passed to zalloc and zfree */
 
     int     data_type;  /* best guess about the data type: binary or text */
     uLong   adler;      /* adler32 value of the uncompressed data */
     uLong   reserved;   /* reserved for future use */
 } z_stream;
 
-typedef z_stream FAR *z_streamp;
+typedef z_stream *z_streamp;
 
                         /* constants */
 

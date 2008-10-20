@@ -152,12 +152,12 @@ static uLong adler32 (uLong adler, const Bytef * buf, uInt len);
 #endif
 /* default windowBits for decompression. MAX_WBITS is for compression only */
 
-static voidpf zcalloc (voidpf opaque, unsigned items, unsigned size);
-static void zcfree (voidpf opaque, voidpf ptr);
+static voidp zcalloc (voidp opaque, unsigned items, unsigned size);
+static void zcfree (voidp opaque, voidp ptr);
 
 #define ZALLOC(strm, items, size) \
            (*((strm)->zalloc))((strm)->opaque, (items), (size))
-#define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidpf)(addr))
+#define ZFREE(strm, addr)  (*((strm)->zfree))((strm)->opaque, (voidp)(addr))
 
 #define zmemcpy memcpy
 
@@ -210,7 +210,7 @@ typedef enum {
 	DISTS
 } codetype;
 
-static int inflate_table (codetype type, unsigned short FAR * lens, unsigned codes, code FAR * FAR * table, unsigned FAR * bits, unsigned short FAR * work);
+static int inflate_table (codetype type, unsigned short *lens, unsigned codes, code **table, unsigned *bits, unsigned short *work);
 
 static void inflate_fast (z_streamp strm, unsigned start);
 
@@ -297,7 +297,7 @@ struct inflate_state {
 	unsigned wsize;		/* window size or zero if not using window */
 	unsigned whave;		/* valid bytes in the window */
 	unsigned write;		/* window write index */
-	unsigned char FAR *window;	/* allocated sliding window, if needed */
+	unsigned char *window;	/* allocated sliding window, if needed */
 	/* bit accumulator */
 	unsigned long hold;	/* input bit accumulator */
 	unsigned bits;		/* number of bits in "in" */
@@ -307,8 +307,8 @@ struct inflate_state {
 	/* for table and code decoding */
 	unsigned extra;		/* extra bits needed */
 	/* fixed and dynamic code tables */
-	code const FAR *lencode;	/* starting table for length/literal codes */
-	code const FAR *distcode;	/* starting table for distance codes */
+	code const *lencode;	/* starting table for length/literal codes */
+	code const *distcode;	/* starting table for distance codes */
 	unsigned lenbits;	/* index bits for lencode */
 	unsigned distbits;	/* index bits for distcode */
 	/* dynamic table building */
@@ -316,23 +316,23 @@ struct inflate_state {
 	unsigned nlen;		/* number of length code lengths */
 	unsigned ndist;		/* number of distance code lengths */
 	unsigned have;		/* number of code lengths in lens[] */
-	code FAR *next;		/* next available space in codes[] */
+	code *next;		/* next available space in codes[] */
 	unsigned short lens[320];	/* temporary storage for code lengths */
 	unsigned short work[288];	/* work area for code table building */
 	code codes[ENOUGH];	/* space for code tables */
 };
 
 /* function prototypes */
-static void fixedtables (struct inflate_state FAR * state);
+static void fixedtables (struct inflate_state *state);
 static int updatewindow (z_streamp strm, unsigned out);
 
 static int inflateReset(z_streamp strm)
 {
-	struct inflate_state FAR *state;
+	struct inflate_state *state;
 
 	if (strm == Z_NULL || strm->state == Z_NULL)
 		return Z_STREAM_ERROR;
-	state = (struct inflate_state FAR *)strm->state;
+	state = (struct inflate_state *)strm->state;
 	strm->total_in = strm->total_out = state->total = 0;
 	strm->msg = Z_NULL;
 	strm->adler = 1;	/* to support ill-conceived Java test suite */
@@ -355,23 +355,23 @@ static int inflateInit2_(strm, windowBits)
 z_streamp strm;
 int windowBits;
 {
-	struct inflate_state FAR *state;
+	struct inflate_state *state;
 
 	if (strm == Z_NULL)
 		return Z_STREAM_ERROR;
 	strm->msg = Z_NULL;	/* in case we return an error */
 	if (strm->zalloc == (alloc_func) 0) {
 		strm->zalloc = zcalloc;
-		strm->opaque = (voidpf) 0;
+		strm->opaque = (voidp) 0;
 	}
 	if (strm->zfree == (free_func) 0)
 		strm->zfree = zcfree;
-	state = (struct inflate_state FAR *)
+	state = (struct inflate_state *)
 	    ZALLOC(strm, 1, sizeof(struct inflate_state));
 	if (state == Z_NULL)
 		return Z_MEM_ERROR;
 	Tracev((stderr, "inflate: allocated\n"));
-	strm->state = (struct internal_state FAR *)state;
+	strm->state = (struct internal_state *)state;
 	if (windowBits < 0) {
 		state->wrap = 0;
 		windowBits = -windowBits;
@@ -405,7 +405,7 @@ z_streamp strm;
    may not be thread-safe.
  */
 static void fixedtables(state)
-struct inflate_state FAR *state;
+struct inflate_state *state;
 {
 	static const code lenfix[512] = {
 		{96, 7, 0}, {0, 8, 80}, {0, 8, 16}, {20, 8, 115}, {18, 7, 31}, {0, 8, 112}, {0, 8, 48},
@@ -517,14 +517,14 @@ static int updatewindow(strm, out)
 z_streamp strm;
 unsigned out;
 {
-	struct inflate_state FAR *state;
+	struct inflate_state *state;
 	unsigned copy, dist;
 
-	state = (struct inflate_state FAR *)strm->state;
+	state = (struct inflate_state *)strm->state;
 
 	/* if it hasn't been done already, allocate space for the window */
 	if (state->window == Z_NULL) {
-		state->window = (unsigned char FAR *)
+		state->window = (unsigned char *)
 		    ZALLOC(strm, 1U << state->wbits, sizeof(unsigned char));
 		if (state->window == Z_NULL)
 			return 1;
@@ -725,15 +725,15 @@ int inflate(strm, flush)
 z_streamp strm;
 int flush;
 {
-	struct inflate_state FAR *state;
-	unsigned char FAR *next;	/* next input */
-	unsigned char FAR *put;	/* next output */
+	struct inflate_state *state;
+	unsigned char *next;	/* next input */
+	unsigned char *put;	/* next output */
 	unsigned have, left;	/* available input and output */
 	unsigned long hold;	/* bit buffer */
 	unsigned bits;		/* bits in bit buffer */
 	unsigned in, out;	/* save starting available input and output */
 	unsigned copy;		/* number of stored or match bytes to copy */
-	unsigned char FAR *from;	/* where to copy match bytes from */
+	unsigned char *from;	/* where to copy match bytes from */
 	code this;		/* current decoding table entry */
 	code last;		/* parent table entry */
 	unsigned len;		/* length to copy for repeats, bits to drop */
@@ -744,7 +744,7 @@ int flush;
 	if (strm == Z_NULL || strm->state == Z_NULL || strm->next_out == Z_NULL || (strm->next_in == Z_NULL && strm->avail_in != 0))
 		return Z_STREAM_ERROR;
 
-	state = (struct inflate_state FAR *)strm->state;
+	state = (struct inflate_state *)strm->state;
 	if (state->mode == TYPE)
 		state->mode = TYPEDO;	/* skip check */
 	LOAD();
@@ -878,7 +878,7 @@ int flush;
 			while (state->have < 19)
 				state->lens[order[state->have++]] = 0;
 			state->next = state->codes;
-			state->lencode = (code const FAR *)(state->next);
+			state->lencode = (code const *)(state->next);
 			state->lenbits = 7;
 			ret = inflate_table(CODES, state->lens, 19, &(state->next), &(state->lenbits), state->work);
 			if (ret) {
@@ -942,7 +942,7 @@ int flush;
 
 			/* build code tables */
 			state->next = state->codes;
-			state->lencode = (code const FAR *)(state->next);
+			state->lencode = (code const *)(state->next);
 			state->lenbits = 9;
 			ret = inflate_table(LENS, state->lens, state->nlen, &(state->next), &(state->lenbits), state->work);
 			if (ret) {
@@ -950,7 +950,7 @@ int flush;
 				state->mode = BAD;
 				break;
 			}
-			state->distcode = (code const FAR *)(state->next);
+			state->distcode = (code const *)(state->next);
 			state->distbits = 6;
 			ret = inflate_table(DISTS, state->lens + state->nlen, state->ndist, &(state->next), &(state->distbits), state->work);
 			if (ret) {
@@ -1143,10 +1143,10 @@ int flush;
 int inflateEnd(strm)
 z_streamp strm;
 {
-	struct inflate_state FAR *state;
+	struct inflate_state *state;
 	if (strm == Z_NULL || strm->state == Z_NULL || strm->zfree == (free_func) 0)
 		return Z_STREAM_ERROR;
-	state = (struct inflate_state FAR *)strm->state;
+	state = (struct inflate_state *)strm->state;
 	if (state->window != Z_NULL)
 		ZFREE(strm, state->window);
 	ZFREE(strm, strm->state);
@@ -1239,19 +1239,19 @@ const char *const z_errmsg[10] = {
 	""
 };
 
-voidpf zcalloc(opaque, items, size)
-voidpf opaque;
+voidp zcalloc(opaque, items, size)
+voidp opaque;
 unsigned items;
 unsigned size;
 {
 	if (opaque)
 		items += size - size;	/* make compiler happy */
-	return sizeof(uInt) > 2 ? (voidpf) malloc(items * size) : (voidpf) calloc(items, size);
+	return sizeof(uInt) > 2 ? (voidp) malloc(items * size) : (voidp) calloc(items, size);
 }
 
 void zcfree(opaque, ptr)
-voidpf opaque;
-voidpf ptr;
+voidp opaque;
+voidp ptr;
 {
 	free(ptr);
 	if (opaque)
@@ -1272,11 +1272,11 @@ voidpf ptr;
  */
 static int inflate_table(type, lens, codes, table, bits, work)
 codetype type;
-unsigned short FAR *lens;
+unsigned short *lens;
 unsigned codes;
-code FAR *FAR * table;
-unsigned FAR *bits;
-unsigned short FAR *work;
+code ** table;
+unsigned *bits;
+unsigned short *work;
 {
 	unsigned len;		/* a code's length in bits */
 	unsigned sym;		/* index of code symbols */
@@ -1292,9 +1292,9 @@ unsigned short FAR *work;
 	unsigned low;		/* low bits for current root entry */
 	unsigned mask;		/* mask for low root bits */
 	code this;		/* table entry for duplication */
-	code FAR *next;		/* next available space in table */
-	const unsigned short FAR *base;	/* base value table to use */
-	const unsigned short FAR *extra;	/* extra bits table to use */
+	code *next;		/* next available space in table */
+	const unsigned short *base;	/* base value table to use */
+	const unsigned short *extra;	/* extra bits table to use */
 	int end;		/* use base and extra for symbol > end */
 	unsigned short count[MAXBITS + 1];	/* number of codes of each length */
 	unsigned short offs[MAXBITS + 1];	/* offsets in table for each length */
@@ -1624,20 +1624,20 @@ static void inflate_fast(strm, start)
 z_streamp strm;
 unsigned start;			/* inflate()'s starting value for strm->avail_out */
 {
-	struct inflate_state FAR *state;
-	unsigned char FAR *in;	/* local strm->next_in */
-	unsigned char FAR *last;	/* while in < last, enough input available */
-	unsigned char FAR *out;	/* local strm->next_out */
-	unsigned char FAR *beg;	/* inflate()'s initial strm->next_out */
-	unsigned char FAR *end;	/* while out < end, enough space available */
+	struct inflate_state *state;
+	unsigned char *in;	/* local strm->next_in */
+	unsigned char *last;	/* while in < last, enough input available */
+	unsigned char *out;	/* local strm->next_out */
+	unsigned char *beg;	/* inflate()'s initial strm->next_out */
+	unsigned char *end;	/* while out < end, enough space available */
 	unsigned wsize;		/* window size or zero if not using window */
 	unsigned whave;		/* valid bytes in the window */
 	unsigned write;		/* window write index */
-	unsigned char FAR *window;	/* allocated sliding window, if wsize != 0 */
+	unsigned char *window;	/* allocated sliding window, if wsize != 0 */
 	unsigned long hold;	/* local strm->hold */
 	unsigned bits;		/* local strm->bits */
-	code const FAR *lcode;	/* local strm->lencode */
-	code const FAR *dcode;	/* local strm->distcode */
+	code const *lcode;	/* local strm->lencode */
+	code const *dcode;	/* local strm->distcode */
 	unsigned lmask;		/* mask for first level of length codes */
 	unsigned dmask;		/* mask for first level of distance codes */
 	code this;		/* retrieved table entry */
@@ -1645,10 +1645,10 @@ unsigned start;			/* inflate()'s starting value for strm->avail_out */
 	/*  window position, window bytes to copy */
 	unsigned len;		/* match length, unused bytes */
 	unsigned dist;		/* match distance */
-	unsigned char FAR *from;	/* where to copy match from */
+	unsigned char *from;	/* where to copy match from */
 
 	/* copy state to local variables */
-	state = (struct inflate_state FAR *)strm->state;
+	state = (struct inflate_state *)strm->state;
 	in = strm->next_in - OFF;
 	last = in + (strm->avail_in - 5);
 	out = strm->next_out - OFF;
