@@ -1,92 +1,41 @@
+/* Based on the 'zlib' general purpose compression library
+  version 1.2.3, July 18th, 2005
 
-/* inflate.c -- zlib decompression
- * Copyright (C) 1995-2005 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
+  Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler
 
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+
+  Jean-loup Gailly        Mark Adler
+  jloup@gzip.org          madler@alumni.caltech.edu
+
+
+  The data format used by the zlib library is described by RFCs (Request for
+  Comments) 1950 to 1952 in the files http://www.ietf.org/rfc/rfc1950.txt
+  (zlib format), rfc1951.txt (deflate format) and rfc1952.txt (gzip format).
+*/
+
+const char inflate_copyright[] = " inflate 1.2.3 Copyright 1995-2005 Mark Adler ";
 /*
- * Change history:
- *
- * 1.2.beta0    24 Nov 2002
- * - First version -- complete rewrite of inflate to simplify code, avoid
- *   creation of window when not needed, minimize use of window when it is
- *   needed, make inffast.c even faster, implement gzip decoding, and to
- *   improve code readability and style over the previous zlib inflate code
- *
- * 1.2.beta1    25 Nov 2002
- * - Use pointers for available input and output checking in inffast.c
- * - Remove input and output counters in inffast.c
- * - Change inffast.c entry and loop from avail_in >= 7 to >= 6
- * - Remove unnecessary second byte pull from length extra in inffast.c
- * - Unroll direct copy to three copies per loop in inffast.c
- *
- * 1.2.beta2    4 Dec 2002
- * - Change external routine names to reduce potential conflicts
- * - Correct filename to inffixed.h for fixed tables in inflate.c
- * - Make hbuf[] unsigned char to match parameter type in inflate.c
- * - Change strm->next_out[-state->offset] to *(strm->next_out - state->offset)
- *   to avoid negation problem on Alphas (64 bit) in inflate.c
- *
- * 1.2.beta3    22 Dec 2002
- * - Add comments on state->bits assertion in inffast.c
- * - Add comments on op field in inftrees.h
- * - Fix bug in reuse of allocated window after inflateReset()
- * - Remove bit fields--back to byte structure for speed
- * - Remove distance extra == 0 check in inflate_fast()--only helps for lengths
- * - Change post-increments to pre-increments in inflate_fast(), PPC biased?
- * - Add compile time option, POSTINC, to use post-increments instead (Intel?)
- * - Make MATCH copy in inflate() much faster for when inflate_fast() not used
- * - Use local copies of stream next and avail values, as well as local bit
- *   buffer and bit count in inflate()--for speed when inflate_fast() not used
- *
- * 1.2.beta4    1 Jan 2003
- * - Split ptr - 257 statements in inflate_table() to avoid compiler warnings
- * - Move a comment on output buffer sizes from inffast.c to inflate.c
- * - Add comments in inffast.c to introduce the inflate_fast() routine
- * - Rearrange window copies in inflate_fast() for speed and simplification
- * - Unroll last copy for window match in inflate_fast()
- * - Use local copies of window variables in inflate_fast() for speed
- * - Pull out common write == 0 case for speed in inflate_fast()
- * - Make op and len in inflate_fast() unsigned for consistency
- * - Add FAR to lcode and dcode declarations in inflate_fast()
- * - Simplified bad distance check in inflate_fast()
- * - Added inflateBackInit(), inflateBack(), and inflateBackEnd() in new
- *   source file infback.c to provide a call-back interface to inflate for
- *   programs like gzip and unzip -- uses window as output buffer to avoid
- *   window copying
- *
- * 1.2.beta5    1 Jan 2003
- * - Improved inflateBack() interface to allow the caller to provide initial
- *   input in strm.
- * - Fixed stored blocks bug in inflateBack()
- *
- * 1.2.beta6    4 Jan 2003
- * - Added comments in inffast.c on effectiveness of POSTINC
- * - Typecasting all around to reduce compiler warnings
- * - Changed loops from while (1) or do {} while (1) to for (;;), again to
- *   make compilers happy
- * - Changed type of window in inflateBackInit() to unsigned char *
- *
- * 1.2.beta7    27 Jan 2003
- * - Changed many types to unsigned or unsigned short to avoid warnings
- * - Added inflateCopy() function
- *
- * 1.2.0        9 Mar 2003
- * - Changed inflateBack() interface to provide separate opaque descriptors
- *   for the in() and out() functions
- * - Changed inflateBack() argument and in_func typedef to swap the length
- *   and buffer address return values for the input function
- * - Check next_in and next_out for Z_NULL on entry to inflate()
- *
- * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
+  If you use the zlib library in a product, an acknowledgment is welcome
+  in the documentation of your product. If for some reason you cannot
+  include such an acknowledgment, I would appreciate that you keep this
+  copyright string in the executable of your product.
  */
 
-/* adler32.c -- compute the Adler-32 checksum of a data stream
- * Copyright (C) 1995-2004 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-/* @(#) $Id$ */
 
 #include "uzlib.h"
 
@@ -247,14 +196,6 @@ struct inflate_state {
 	code codes[ENOUGH];	/* space for code tables */
 };
 
-			/* checksum functions */
-
-/*
-     These functions are not related to compression but are exported
-   anyway because they might be useful in applications using the
-   compression library.
-*/
-
 /* function prototypes */
 
 static uLong adler32 (uLong adler, const Bytef * buf, uInt len);
@@ -271,27 +212,6 @@ static int inflateReset(z_streamp strm);
 static int inflateInit2_(z_streamp strm, int windowBits);
 
 
-/*
-     Update a running Adler-32 checksum with the bytes buf[0..len-1] and
-   return the updated checksum. If buf is NULL, this function returns
-   the required initial value for the checksum.
-   An Adler-32 checksum is almost as reliable as a CRC32 but can be computed
-   much faster. Usage example:
-
-     uLong adler = adler32(0L, Z_NULL, 0);
-
-     while (read_buffer(buffer, length) != EOF) {
-       adler = adler32(adler, buffer, length);
-     }
-     if (adler != original_adler) error();
-*/
-
-/* zutil.c -- target dependent utility functions for the compression library
- * Copyright (C) 1995-2005 Jean-loup Gailly.
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-/* @(#) $Id$ */
 
 #  define Assert(cond,msg)
 #  define Trace(x)
@@ -316,21 +236,7 @@ static int inflateInit2_(z_streamp strm, int windowBits);
 
 #define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
 
-/* inftrees.c -- generate Huffman trees for efficient decoding
- * Copyright (C) 1995-2005 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-
 #define MAXBITS 15
-
-const char inflate_copyright[] = " inflate 1.2.3 Copyright 1995-2005 Mark Adler ";
-/*
-  If you use the zlib library in a product, an acknowledgment is welcome
-  in the documentation of your product. If for some reason you cannot
-  include such an acknowledgment, I would appreciate that you keep this
-  copyright string in the executable of your product.
- */
 
 
 static int inflateReset(z_streamp strm)
@@ -1162,7 +1068,20 @@ z_streamp strm;
 	return Z_OK;
 }
 
-/* ========================================================================= */
+/*
+     Update a running Adler-32 checksum with the bytes buf[0..len-1] and
+   return the updated checksum. If buf is NULL, this function returns
+   the required initial value for the checksum.
+   An Adler-32 checksum is almost as reliable as a CRC32 but can be computed
+   much faster. Usage example:
+
+     uLong adler = adler32(0L, Z_NULL, 0);
+
+     while (read_buffer(buffer, length) != EOF) {
+       adler = adler32(adler, buffer, length);
+     }
+     if (adler != original_adler) error();
+*/
 static uLong adler32(adler, buf, len)
 uLong adler;
 const Bytef *buf;
@@ -1583,11 +1502,6 @@ unsigned short *work;
 	*bits = root;
 	return 0;
 }
-
-/* inffast.c -- fast decoding
- * Copyright (C) 1995-2004 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
 
 #  define OFF 0
 #  define PUP(a) *(a)++
