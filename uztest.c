@@ -5,6 +5,18 @@
 
 #include "uzlib.h"
 
+static voidp
+my_calloc (voidp opaque, unsigned items, unsigned size)
+{
+	return malloc (items * size);
+}
+static void
+my_free (voidp opaque, voidp ptr)
+{
+	free (ptr);
+}
+
+
 int
 main (int argc, char **argv)
 {
@@ -13,8 +25,8 @@ main (int argc, char **argv)
 	unsigned char obuf[4096];
 	int ret, i;
 
-	z.zalloc = Z_NULL;
-	z.zfree = Z_NULL;
+	z.zalloc = my_calloc;
+	z.zfree = my_free;
 	z.avail_in = 0;
 	z.next_in = Z_NULL;
 

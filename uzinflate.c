@@ -202,8 +202,6 @@ struct inflate_state {
 /* function prototypes */
 
 static uLong adler32 (uLong adler, const Bytef * buf, uInt len);
-static voidp zcalloc (voidp opaque, unsigned items, unsigned size);
-static void zcfree (voidp opaque, voidp ptr);
 static int inflate_table (codetype type, unsigned short *lens, unsigned codes, code **table, unsigned *bits, unsigned short *work);
 
 static void inflate_fast (z_streamp strm, unsigned start);
@@ -276,11 +274,10 @@ inflateInit2_(z_streamp strm, int windowBits)
 		return Z_STREAM_ERROR;
 	strm->msg = Z_NULL;	/* in case we return an error */
 	if (strm->zalloc == (alloc_func) 0) {
-		strm->zalloc = zcalloc;
-		strm->opaque = (voidp) 0;
+		return Z_MEM_ERROR;
 	}
 	if (strm->zfree == (free_func) 0)
-		strm->zfree = zcfree;
+		return Z_MEM_ERROR;
 	state = (struct inflate_state *)
 	    ZALLOC(strm, 1, sizeof(struct inflate_state));
 	if (state == Z_NULL)
@@ -1162,25 +1159,6 @@ const char *const z_errmsg[10] = {
 	"incompatible version",	/* Z_VERSION_ERROR (-6) */
 	""
 };
-
-voidp zcalloc(opaque, items, size)
-voidp opaque;
-unsigned items;
-unsigned size;
-{
-	if (opaque)
-		items += size - size;	/* make compiler happy */
-	return sizeof(uInt) > 2 ? (voidp) malloc(items * size) : (voidp) calloc(items, size);
-}
-
-void zcfree(opaque, ptr)
-voidp opaque;
-voidp ptr;
-{
-	free(ptr);
-	if (opaque)
-		return;		/* make compiler happy */
-}
 
 /*
    Build a set of tables to decode the provided canonical Huffman code.
